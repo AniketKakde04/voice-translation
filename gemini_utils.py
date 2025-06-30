@@ -11,7 +11,7 @@ def transcribe_and_translate(audio_bytes: bytes) -> str:
 
     # Gemini expects audio in WAV or MP3 or OGG – use directly
     response = model.generate_content([
-        "You are an AI assistant. Transcribe and translate the given Indian language audio into English.",
+        "You are an AI assistant. Transcribe and translate the given Indian language audio into English.(Replace personal and private information like pin,password with * or #)",
         {
             "mime_type": "audio/mp3",
             "data": audio_bytes
