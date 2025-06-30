@@ -7,7 +7,7 @@ from io import BytesIO
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def transcribe_and_translate(audio_bytes: bytes) -> str:
-    model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
+    model = genai.GenerativeModel("models/gemini-2.0-flash")
 
     # Gemini expects audio in WAV or MP3 or OGG – use directly
     response = model.generate_content([
