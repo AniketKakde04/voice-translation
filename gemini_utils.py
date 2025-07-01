@@ -28,7 +28,7 @@ def transcribe_and_translate(audio_bytes: bytes) -> str:
     model = genai.GenerativeModel("models/gemini-2.0-flash")
 
     response = model.generate_content([
-        "You are an AI assistant. Transcribe and translate the given Indian language audio into English.",
+        "You are an AI assistant. Transcribe and translate the given Indian language audio into English and just provide the converted english text",
         {
             "mime_type": "audio/mp3",
             "data": audio_bytes
