@@ -4,21 +4,25 @@ import re
 from security_utils import encrypt_text
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+sensitive_data_log = []
 
-# 🔐 Mask and encrypt sensitive data
 def mask_sensitive_data(text: str) -> str:
     card_regex = r'\b(?:\d[ -]*?){13,16}\b'
     pin_regex = r'\b\d{4,6}\b'
 
-    def replace_with_encryption(match):
+    def mask_and_store(match, label="****"):
         original = match.group()
         encrypted = encrypt_text(original)
-        return f"[ENCRYPTED:{encrypted}]"
+        sensitive_data_log.append((label, encrypted))
+        return label
 
-    text = re.sub(card_regex, replace_with_encryption, text)
-    text = re.sub(pin_regex, replace_with_encryption, text)
+    # Replace card numbers with '****'
+    text = re.sub(card_regex, lambda m: mask_and_store(m, "****"), text)
+
+    # Replace 4–6 digit PINs with '***PIN***'
+    text = re.sub(pin_regex, lambda m: mask_and_store(m, "***PIN***"), text)
+
     return text
-
 # 🎙 Transcribe and translate audio, then secure sensitive info
 def transcribe_and_translate(audio_bytes: bytes) -> str:
     model = genai.GenerativeModel("models/gemini-2.0-flash")
