@@ -3,35 +3,32 @@ import os
 import re
 from security_utils import encrypt_text
 
-# Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Global list to track encrypted sensitive info
 sensitive_data_log = []
 
-# 🔐 Mask and encrypt sensitive data from transcribed text
 def mask_sensitive_data(text: str) -> str:
     patterns = [
         # 🧾 Financial
-        (r'\b(?:\d[ -]*?){13,16}\b', '****CARD****'),                       # Card numbers
-        (r'\b\d{4,6}\b', '***PIN***'),                                     # PINs
-        (r'\b[A-Z]{4}0[A-Z0-9]{6}\b', '***IFSC***'),                        # IFSC
-        (r'\b\d{9,18}\b', '***ACCOUNT***'),                                 # Account Numbers
+        (r'\b(?:\d[ -]*?){13,16}\b', '****CARD****'),
+        (r'\b\d{4,6}\b', '***PIN***'),
+        (r'\b[A-Z]{4}0[A-Z0-9]{6}\b', '***IFSC***'),
+        (r'\b\d{9,18}\b', '***ACCOUNT***'),
 
         # 📞 Contact Info
-        (r'\b[6-9]\d{9}\b', '***PHONE***'),                                 # Mobile
-        (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '***EMAIL***'),  # Email
-        (r'\b[\w.\-]{2,256}@[a-z]{2,10}\b', '***UPI***'),                   # UPI ID
+        (r'\b[6-9]\d{9}\b', '***PHONE***'),
+        (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '***EMAIL***'),
+        (r'\b[\w.\-]{2,256}@[a-z]{2,10}\b', '***UPI***'),
 
         # 🪪 IDs (India)
-        (r'\b\d{4}\s?\d{4}\s?\d{4}\b', '***AADHAAR***'),                   # Aadhaar
-        (r'\b[A-Z]{5}[0-9]{4}[A-Z]\b', '***PAN***'),                       # PAN
-        (r'\b[A-Z]{3}\d{7}\b', '***PASSPORT***'),                          # Passport
-        (r'\b\d{2}[A-Z]{3}\d{4}\b', '***VEHICLE***'),                      # Vehicle Reg
+        (r'\b\d{4}\s?\d{4}\s?\d{4}\b', '***AADHAAR***'),
+        (r'\b[A-Z]{5}[0-9]{4}[A-Z]\b', '***PAN***'),
+        (r'\b[A-Z]{3}\d{7}\b', '***PASSPORT***'),
+        (r'\b\d{2}[A-Z]{3}\d{4}\b', '***VEHICLE***'),
 
         # 🧠 Misc
-        (r'\b\d{2}/\d{2}/\d{4}\b', '***DATE***'),                          # Dates
-        (r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '***IP***'),                      # IP Address
+        (r'\b\d{2}/\d{2}/\d{4}\b', '***DATE***'),
+        (r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '***IP***'),
     ]
 
     def mask_and_store(match, label):
@@ -45,10 +42,9 @@ def mask_sensitive_data(text: str) -> str:
 
     return text
 
-# 🎙 Main entry: Transcribe, mask/encrypt, and restrict if needed
 def transcribe_and_translate(audio_bytes: bytes) -> str:
     global sensitive_data_log
-    sensitive_data_log.clear()  # Reset log for this audio
+    sensitive_data_log.clear()
 
     model = genai.GenerativeModel("models/gemini-2.0-flash")
     response = model.generate_content([
@@ -60,14 +56,10 @@ def transcribe_and_translate(audio_bytes: bytes) -> str:
     ])
 
     transcribed = response.text.strip()
-
-    # 🔐 Check for sensitive data
     secured_text = mask_sensitive_data(transcribed)
 
+    # ✅ If sensitive info was found, warn user politely
     if sensitive_data_log:
-        print("Sensitive content detected:")
-        for label, encrypted in sensitive_data_log:
-            print(f"{label}: {encrypted}")
-        return "🚫 Please avoid sharing personal or sensitive information like card numbers, PINs, Aadhaar, etc."
+        return f"📝 {secured_text}\n⚠️ Please avoid sharing personal or sensitive information like card numbers, PINs, Aadhaar, etc."
 
     return secured_text
