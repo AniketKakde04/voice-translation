@@ -9,6 +9,12 @@ sensitive_data_log = []
 def mask_sensitive_data(text: str) -> str:
     card_regex = r'\b(?:\d[ -]*?){13,16}\b'
     pin_regex = r'\b\d{4,6}\b'
+    phone_regex = r'\b[6-9]\d{9}\b'
+    email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    aadhaar_regex = r'\b\d{4}\s?\d{4}\s?\d{4}\b'
+    pan_regex = r'\b[A-Z]{5}[0-9]{4}[A-Z]\b'
+    upi_regex = r'\b[\w.\-]{2,256}@[a-z]{2,10}\b'
+
 
     def mask_and_store(match, label="****"):
         original = match.group()
