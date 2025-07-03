@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from twilio.twiml.messaging_response import MessagingResponse
 from gemini_utils import transcribe_and_translate
 from twilio_utils import download_audio_file
+from tts_utils import text_to_speech
 
 load_dotenv()
 
@@ -21,7 +22,6 @@ def whatsapp_webhook():
     media_url = request.form.get("MediaUrl0")
     media_content_type = request.form.get("MediaContentType0", "")
 
-    # Only accept MP3/WAV/OGG
     if not any(fmt in media_content_type for fmt in ["audio", "mp3", "wav", "ogg"]):
         resp.message("Unsupported audio format. Please send MP3, WAV or OGG voice note.")
         return str(resp)
@@ -29,7 +29,15 @@ def whatsapp_webhook():
     try:
         audio_data = download_audio_file(media_url)
         translated_text = transcribe_and_translate(audio_data)
-        resp.message(f"🗣 Translated to English:\n\n{translated_text}")
+
+        # Convert to speech
+        output_path = text_to_speech(translated_text)
+        voice_url = request.url_root + "static/output.mp3"
+
+        # WhatsApp voice reply
+        msg = resp.message("🔊 Here's your translated voice note.")
+        msg.media(voice_url)
+
     except Exception as e:
         print("Error:", e)
         resp.message("Sorry, could not process your voice note. Try again.")
