@@ -3,6 +3,7 @@ import os
 import re
 from security_utils import encrypt_text
 from supabase_utils import add_sensitive_value, get_all_sensitive_values, log_translation
+from rag_utils import rag_detect_and_store
 
 # Setup Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -47,36 +48,17 @@ def mask_sensitive_data(text: str) -> str:
             sensitive_data_log.append((label, encrypted))
 
     return text
-
+    
 def detect_unknown_sensitive_info(text: str) -> str:
-    model = genai.GenerativeModel("models/gemini-2.0-flash")
-    prompt = f"""
-You are a data privacy expert. The following message may contain sensitive user data (like names, passwords, codes, secret phrases, personal information) that is not caught by standard rules.
+    import nltk
+    nltk.download("punkt")
+    from nltk.tokenize import sent_tokenize
 
-Extract **only** the sensitive values (exact strings) that should be masked. Return a **JSON array of strings only**. Do not explain.
-
-Message:
-{text}
-"""
-
-    response = model.generate_content(prompt)
-    result = response.text.strip()
-
-    try:
-        import json
-        sensitive_items = json.loads(result)
-        for item in sensitive_items:
-            if item in text:
-                encrypted = encrypt_text(item)
-                label = '***UNKNOWN***'
-                text = text.replace(item, label)
-                sensitive_data_log.append((label, encrypted))
-
-                # Store to Supabase for future use
-                add_sensitive_value(label, item)
-
-    except Exception as e:
-        print("Failed to parse Gemini response:", e)
+    chunks = sent_tokenize(text)  # Split into sentences
+    for chunk in chunks:
+        masked = rag_detect_and_store(chunk)
+        if masked != chunk:
+            text = text.replace(chunk, masked)
 
     return text
 
