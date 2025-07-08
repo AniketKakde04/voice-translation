@@ -5,3 +5,6 @@ requests
 google-generativeai
 gunicorn
 cryptography
+chromadb
+sentence-transformers 
+instructor-embeddings
