@@ -7,4 +7,3 @@ gunicorn
 cryptography
 chromadb
 sentence-transformers 
-instructor-embeddings
