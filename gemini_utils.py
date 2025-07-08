@@ -51,8 +51,9 @@ def mask_sensitive_data(text: str) -> str:
 def detect_unknown_sensitive_info(text: str) -> str:
     model = genai.GenerativeModel("models/gemini-2.0-flash")
     prompt = f"""
-Your task is to detect any personal or sensitive information in the following message that may have been missed by traditional patterns like card numbers, phone numbers, emails, etc.
-Only return a JSON list of the exact values you believe are sensitive, without explanation.
+You are a data privacy expert. The following message may contain sensitive user data (like names, passwords, codes, secret phrases, personal information) that is not caught by standard rules.
+
+Extract **only** the sensitive values (exact strings) that should be masked. Return a **JSON array of strings only**. Do not explain.
 
 Message:
 {text}
