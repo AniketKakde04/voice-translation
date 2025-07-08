@@ -7,3 +7,4 @@ gunicorn
 cryptography
 chromadb
 sentence-transformers 
+nltk
