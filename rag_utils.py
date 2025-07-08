@@ -32,15 +32,14 @@ def is_phrase_sensitive(phrase: str) -> bool:
 
     # Build prompt using top similar examples
     context = "\n".join(results["documents"][0])
-    prompt = f """ You are a data privacy assistant. Based on these past sensitive examples:
+   prompt = (
+    "You are a data privacy assistant. Based on these past sensitive examples:\n\n"
+    f"{context}\n\n"
+    f'Is the following sentence sensitive or personal and should it be masked?\n\n'
+    f'Sentence: "{phrase}"\n\n'
+    "Reply only with 'Yes' or 'No'."
+)
 
-{context}
-
-Is the following sentence sensitive or personal and should it be masked?
-
-Sentence: "{phrase}"
-
-Reply only with "Yes" or "No". """
 
     response = genai.GenerativeModel("models/gemini-2.0").generate_content(prompt)
     answer = response.text.strip().lower()
