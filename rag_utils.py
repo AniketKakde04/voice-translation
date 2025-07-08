@@ -4,40 +4,38 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
-from gemini_utils import sensitive_data_log
+from shared_state import sensitive_data_log
 from security_utils import encrypt_text
 from supabase_utils import add_sensitive_value
 
-# Setup Gemini
+# Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Chroma setup (in-memory or persistent)
+# Chroma setup
 chroma_client = chromadb.Client()
 collection = chroma_client.get_or_create_collection(name="sensitive_chunks")
 
-# Sentence embedding model
-model = SentenceTransformer("all-MiniLM-L6-v2")  # Lightweight and fast
+# Embedding model
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# ✅ Store a new sensitive phrase (embedding + vector DB)
+# ✅ Store a sensitive phrase in Chroma
 def store_sensitive_phrase(phrase: str):
     embedding = model.encode(phrase).tolist()
     collection.add(
         documents=[phrase],
         embeddings=[embedding],
-        ids=[str(uuid.uuid4())]  # Ensure unique ID
+        ids=[str(uuid.uuid4())]
     )
 
-# ✅ Check if a phrase looks sensitive using retrieval + Gemini
+# ✅ Check if phrase is sensitive using RAG + Gemini
 def is_phrase_sensitive(phrase: str) -> bool:
     embedding = model.encode(phrase).tolist()
     results = collection.query(query_embeddings=[embedding], n_results=5)
 
-    # Skip if no context
     if not results["documents"] or not results["documents"][0]:
         return False
 
     context = "\n".join(results["documents"][0])
-
     prompt = (
         "You are a data privacy assistant. Based on these past sensitive examples:\n\n"
         f"{context}\n\n"
@@ -49,24 +47,20 @@ def is_phrase_sensitive(phrase: str) -> bool:
     response = genai.GenerativeModel("models/gemini-2.0").generate_content(prompt)
     answer = response.text.strip().lower()
 
-    # Debug (optional)
-    print(f"RAG check for: {phrase}")
-    print(f"Context examples:\n{context}")
-    print(f"Gemini response: {answer}")
+    print(f"RAG check: {phrase}")
+    print(f"Similar examples:\n{context}")
+    print(f"Gemini said: {answer}")
 
     return answer.startswith("yes")
 
-# ✅ Main function to run full RAG-sensitive detection
+# ✅ Main function to detect, store & mask
 def rag_detect_and_store(phrase: str) -> str:
     if is_phrase_sensitive(phrase):
         encrypted = encrypt_text(phrase)
         label = "***UNKNOWN***"
         sensitive_data_log.append((label, encrypted))
-
-        # Store in Supabase + Chroma
         add_sensitive_value(label, phrase)
         store_sensitive_phrase(phrase)
-
         return label
 
     return phrase
